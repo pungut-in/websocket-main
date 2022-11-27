@@ -16,5 +16,5 @@
 		"semi": ["error", "always"],
 		"@typescript-eslint/no-explicit-any": "off"
 	},
-	"ignorePatterns": ["build/", "tests/"]
+	"ignorePatterns": ["build/", "tests/", "commitlint.config.js"]
 }
