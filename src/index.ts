@@ -1,38 +1,56 @@
 import express, { Request, Response } from "express";
-import dotenv from "dotenv";
-import { APIResponse } from "../index";
-import WebSocket from "ws";
-
-dotenv.config();
-const PORT = parseInt(process.env.PORT as string) || 3000;
-const WSPORT = parseInt(process.env.WS_PORT as string) || 8080;
-const ws = new WebSocket.WebSocketServer({
-	port: WSPORT,
+// import redis from "redis";
+import morgan from "morgan";
+import bodyParser from "body-parser";
+import { WebSocket, WebSocketServer } from "ws";
+import { createServer, IncomingMessage } from "http";
+const app = express();
+const server = createServer(app);
+const wss = new WebSocketServer({
+	server,
 });
-ws.on("connection", () => {
-	console.log("New socket connection");
+
+wss.on("connection", (socket: WebSocket, req: IncomingMessage) => {
+	//On connected,
+	console.log("Request from: " + req.socket.remoteAddress);
 });
-const client = express();
 
-client.use(express.json());
+server.on("upgrade", (request, socket, head) => {
+	// Authenticate here
+	console.log(request, socket, head);
+	/**
+	 *
+	 * Authenticate the request. Check the headers for id, tokens and cross validate with the authentication endpoint. (reference rey)
+	 *
+	 * If authentication failed, destroy the socket.
+	 *
+	 * If authentication succeeded, handle the upgrade request.
+	 * https://www.npmjs.com/package/ws#client-authentication
+	 *
+	 * Once socket is created, Loop over all the needed functions and pass the socket in it.
+	 *
+	 * Using the created socket, create a listener on the redis channel by subscribing to the redis channel based on user id (channel name and user id is the same).
+	 *
+	 * Subscribe function of a redis client takes a callback. This callback has a message parameter.
+	 * https://blog.logrocket.com/using-redis-pub-sub-node-js/#using-redis-pub-sub
+	 *
+	 * On the callback, emit message to the connected socket based on upgrade.
+	 *
+	 */
+});
 
-client.all("/", (_req: Request, res: Response) => {
-	res.status(200);
-	return res.json({
+app.use(express.json());
+app.use(bodyParser.json());
+app.use(morgan("dev"));
+
+app.all("/", (req: Request, res: Response) => {
+	return res.status(200).json({
 		status: 200,
-		code: "OK",
-		is_boolean: true,
-		message: "OK",
-		data: {},
-	} as APIResponse);
-});
-client.listen(PORT, () => {
-	console.log("Endpoint on port " + PORT);
-	console.log("Websocket endpoint on port " + WSPORT);
-	return;
+		isValid: true,
+		data: null,
+	});
 });
 
-export default {
-	ExpressClient: client,
-	WebsocketClient: ws,
-};
+server.listen(3000, () => {
+	console.log("Listening on port 3000");
+});
